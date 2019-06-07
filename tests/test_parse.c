@@ -4,7 +4,7 @@
 
 #include <ihex.h>
 
-static char input_hex[] = \
+static char input_hex[] =
 ":020000040800F2\n"
 ":0C000400FFFF0120E50A0008290B00089E\n"
 ":04001000290B0008B0\n"
