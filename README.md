@@ -1,5 +1,5 @@
 # libihex
-Plain C library for parsing and dumping intelhex files.
+Plain C library for parsing and dumping IntelHex files.
 
 ## Features:
 * robust intelhex parsing
