@@ -1,7 +1,7 @@
 # libihex
 Plain C library for parsing and dumping IntelHex files.
 
-## Features:
+## Features
 * robust intelhex parsing
 * binary data segmentation
 * dynamic memory allocation
@@ -14,7 +14,18 @@ Plain C library for parsing and dumping IntelHex files.
 * unit tests
 * error raports
 
-## Api:
+## Build
+
+Build and install:
+
+```sh
+cmake .
+make
+make check
+sudo make install
+```
+
+## API
 ```c
 ihex_handler_t ihex_new(void);
 void ihex_delete(ihex_handler_t self);
@@ -28,9 +39,9 @@ int ihex_set_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t siz
 int ihex_get_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size);
 ```
 
-## Examples:
+## Examples
 
-### Loading IntelHex file:
+### Loading IntelHex file
 ```c
 #include <stdio.h>
 
