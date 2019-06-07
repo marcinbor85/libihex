@@ -17,6 +17,9 @@ set_target_properties( ihex PROPERTIES VERSION 0.1.0 SOVERSION 1 )
 install( TARGETS ihex DESTINATION lib )
 install( FILES src/ihex.h DESTINATION include )
 
+add_executable( example example/main.c )
+target_link_libraries( example ihex )
+
 add_executable( test_parse tests/test_parse.c )
 target_link_libraries( test_parse ihex )
 add_test( test_parse ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/test_parse )
