@@ -51,7 +51,7 @@ static char output_hex[] =
 
 int main(int argc, char **argv)
 {
-	ihex_handler_t ihex;
+	struct ihex_object *ihex;
         FILE *fp;
         struct ihex_data_segment *seg;
         char out[512];

@@ -35,7 +35,7 @@ static char input_hex[] =
 
 int main(int argc, char **argv)
 {
-        ihex_handler_t ihex;
+        struct ihex_object *ihex;
         FILE *fp;
         unsigned char data[8];
         int i;

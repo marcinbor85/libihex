@@ -28,17 +28,17 @@ SOFTWARE.
 #include <stdlib.h>
 #include <assert.h>
 
-ihex_handler_t ihex_new(void)
+struct ihex_object *ihex_new(void)
 {
-	ihex_handler_t self;
+	struct ihex_object *self;
 
-	self = (ihex_handler_t)malloc(sizeof(struct ihex_object));
+	self = (struct ihex_object *)malloc(sizeof(struct ihex_object));
 	if (self == NULL)
 		return NULL;
 
 	self->segments = NULL;
 	self->pad_byte = 0xFF;
-        self->align_record = 16;
+	self->align_record = 16;
 	self->extended_address = 0;
 	self->finished_flag = 0;
 	self->error = IHEX_NO_ERROR;
@@ -46,7 +46,7 @@ ihex_handler_t ihex_new(void)
 	return self;
 }
 
-void ihex_delete(ihex_handler_t self)
+void ihex_delete(struct ihex_object *self)
 {
 	struct ihex_data_segment *seg;
 	struct ihex_data_segment *seg_next;
@@ -62,7 +62,7 @@ void ihex_delete(ihex_handler_t self)
 	free(self);
 }
 
-const char *ihex_get_error_string(ihex_handler_t self)
+const char *ihex_get_error_string(struct ihex_object *self)
 {
 	switch (self->error) {
 	case IHEX_NO_ERROR:
@@ -87,15 +87,15 @@ const char *ihex_get_error_string(ihex_handler_t self)
 		return "Unsupported record type";
 	case IHEX_ERROR_MALLOC:
 		return "Memory allocation error";
-        case IHEX_ERROR_DUMP:
-                return "Write dump stream error";
+	case IHEX_ERROR_DUMP:
+		return "Write dump stream error";
 	default:
 		return "Unknown error";
 	}
 	return NULL;
 }
 
-static int ihex_check_data_overlapping(ihex_handler_t self, uint32_t adr, uint32_t size)
+static int ihex_check_data_overlapping(struct ihex_object *self, uint32_t adr, uint32_t size)
 {
 	uint32_t seg_start_adr;
 	uint32_t seg_finish_adr;
@@ -137,10 +137,10 @@ static int ihex_check_data_overlapping(ihex_handler_t self, uint32_t adr, uint32
 	return 0;
 }
 
-static int ihex_new_segment(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size)
+static int ihex_new_segment(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size)
 {
 	uint8_t *seg_data;
-        struct ihex_data_segment *seg;
+	struct ihex_data_segment *seg;
 	struct ihex_data_segment *seg_new;
 
 	assert(self != NULL);
@@ -164,38 +164,38 @@ static int ihex_new_segment(ihex_handler_t self, uint32_t adr, uint8_t *data, ui
 
 	memcpy(seg_new->data, data, size);
 
-        if (self->segments == NULL) {
+	if (self->segments == NULL) {
 		self->segments = seg_new;
 		seg_new->next = NULL;
 		seg_new->prev = NULL;
-                return 0;
+		return 0;
 	}
 
-        seg = self->segments;
-        while (1) {
-                if (seg_new->adr_start < seg->adr_start) {
-                        seg_new->prev = seg->prev;
-                        seg_new->next = seg;
-                        seg->prev = seg_new;
-                        if (seg_new->prev == NULL)
-                                self->segments = seg_new;
-                        break;
-                }
-                
-                if (seg->next == NULL) {
-                        seg->next = seg_new;
-                        seg_new->next = NULL;
-                        seg_new->prev = seg;
-                        break;
-                }
+	seg = self->segments;
+	while (1) {
+		if (seg_new->adr_start < seg->adr_start) {
+			seg_new->prev = seg->prev;
+			seg_new->next = seg;
+			seg->prev = seg_new;
+			if (seg_new->prev == NULL)
+				self->segments = seg_new;
+			break;
+		}
 
-                seg = seg->next;
-        }
+		if (seg->next == NULL) {
+			seg->next = seg_new;
+			seg_new->next = NULL;
+			seg_new->prev = seg;
+			break;
+		}
+
+		seg = seg->next;
+	}
 
 	return 0;
 }
 
-static int ihex_join_left(ihex_handler_t self, struct ihex_data_segment *seg_before, uint8_t *data, uint32_t size)
+static int ihex_join_left(struct ihex_object *self, struct ihex_data_segment *seg_before, uint8_t *data, uint32_t size)
 {
 	assert(self != NULL);
 	assert(seg_before != NULL);
@@ -216,7 +216,7 @@ static int ihex_join_left(ihex_handler_t self, struct ihex_data_segment *seg_bef
 	return 0;
 }
 
-static int ihex_join_right(ihex_handler_t self, struct ihex_data_segment *seg_after, uint32_t adr, uint8_t *data, uint32_t size)
+static int ihex_join_right(struct ihex_object *self, struct ihex_data_segment *seg_after, uint32_t adr, uint8_t *data, uint32_t size)
 {
 	assert(self != NULL);
 	assert(seg_after != NULL);
@@ -240,7 +240,8 @@ static int ihex_join_right(ihex_handler_t self, struct ihex_data_segment *seg_af
 	return 0;
 }
 
-static int ihex_insert_between(ihex_handler_t self, struct ihex_data_segment *seg_before, struct ihex_data_segment *seg_after, uint8_t *data, uint32_t size)
+static int ihex_insert_between(struct ihex_object *self, struct ihex_data_segment *seg_before, struct ihex_data_segment *seg_after, uint8_t *data,
+			       uint32_t size)
 {
 	assert(self != NULL);
 	assert(seg_before != NULL);
@@ -270,10 +271,10 @@ static int ihex_insert_between(ihex_handler_t self, struct ihex_data_segment *se
 	}
 	free(seg_after);
 
-        return 0;
+	return 0;
 }
 
-int ihex_set_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size)
+int ihex_set_data(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size)
 {
 	struct ihex_data_segment *seg;
 	struct ihex_data_segment *seg_before = NULL;
@@ -357,7 +358,7 @@ static int ihex_get_hex_number(char const *hex, uint8_t *byte, uint8_t size)
 	return 0;
 }
 
-static int ihex_new_record(ihex_handler_t self, uint8_t size, uint16_t adr, uint8_t type, uint8_t *data)
+static int ihex_new_record(struct ihex_object *self, uint8_t size, uint16_t adr, uint8_t type, uint8_t *data)
 {
 	assert(self != NULL);
 
@@ -385,7 +386,7 @@ static int ihex_new_record(ihex_handler_t self, uint8_t size, uint16_t adr, uint
 	return 0;
 }
 
-static int ihex_parse_record(ihex_handler_t self, const char *record_line)
+static int ihex_parse_record(struct ihex_object *self, const char *record_line)
 {
 	uint8_t data_size;
 	uint8_t index;
@@ -484,7 +485,7 @@ static int ihex_parse_record(ihex_handler_t self, const char *record_line)
 	return 0;
 }
 
-int ihex_parse_file(ihex_handler_t self, FILE *fp)
+int ihex_parse_file(struct ihex_object *self, FILE *fp)
 {
 	char *line = NULL;
 	size_t len = 0;
@@ -517,7 +518,7 @@ int ihex_parse_file(ihex_handler_t self, FILE *fp)
 	return 0;
 }
 
-int ihex_get_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size)
+int ihex_get_data(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size)
 {
 	struct ihex_data_segment *seg;
 	int exist_flag;
@@ -563,100 +564,100 @@ int ihex_get_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t siz
 
 static int ihex_dump_record(FILE *fp, uint16_t adr, uint8_t type, uint8_t *data, uint8_t size)
 {
-        uint8_t sum;
-        uint8_t crc;
-        int s;
+	uint8_t sum;
+	uint8_t crc;
+	int s;
 
 	assert(fp != NULL);
 
-        s = fprintf(fp, ":%02X%04X%02X", size, adr, type);
-        if (s != 9)
-                return -1;
+	s = fprintf(fp, ":%02X%04X%02X", size, adr, type);
+	if (s != 9)
+		return -1;
 
-        sum = size;
+	sum = size;
 	sum += (uint8_t)(adr >> 8);
 	sum += (uint8_t)(adr & 0x00FF);
 	sum += type;
 
-        while (size > 0) {
-                s = fprintf(fp, "%02X", *data);
-                if (s != 2)
-                        return -1;
-                sum += *data++;
-                size--;
-        }
+	while (size > 0) {
+		s = fprintf(fp, "%02X", *data);
+		if (s != 2)
+			return -1;
+		sum += *data++;
+		size--;
+	}
 
-        crc = 0x100 - sum;
-        s = fprintf(fp, "%02X\n", crc);
-        if (s != 3)
-                return -1;
+	crc = 0x100 - sum;
+	s = fprintf(fp, "%02X\n", crc);
+	if (s != 3)
+		return -1;
 
-        return 0;
+	return 0;
 }
 
-static int ihex_dump_segment(ihex_handler_t self, struct ihex_data_segment *seg, FILE *fp, uint32_t *old_address)
+static int ihex_dump_segment(struct ihex_object *self, struct ihex_data_segment *seg, FILE *fp, uint32_t *old_address)
 {
-        uint32_t new_address;
-        uint32_t total;
-        uint32_t remained;
-        uint32_t max_rec_size;
-        uint32_t rec_size;
-        uint8_t adr_data[2];
+	uint32_t new_address;
+	uint32_t total;
+	uint32_t remained;
+	uint32_t max_rec_size;
+	uint32_t rec_size;
+	uint8_t adr_data[2];
 
-        assert(seg != NULL);
+	assert(seg != NULL);
 	assert(fp != NULL);
-        assert(old_address != NULL);
+	assert(old_address != NULL);
 
-        total = 0;
-        while (total < seg->data_size) {
-                new_address = seg->adr_start + total;
-                max_rec_size = self->align_record - new_address % self->align_record;
-                rec_size = max_rec_size;
-                remained = seg->data_size - total;
-                if (rec_size > remained)
-                        rec_size = remained;
+	total = 0;
+	while (total < seg->data_size) {
+		new_address = seg->adr_start + total;
+		max_rec_size = self->align_record - new_address % self->align_record;
+		rec_size = max_rec_size;
+		remained = seg->data_size - total;
+		if (rec_size > remained)
+			rec_size = remained;
 
-                if ((new_address & 0xFFFF0000) != (*old_address & 0xFFFF0000)) {
-                        adr_data[0] = new_address >> 24;
-                        adr_data[1] = (new_address >> 16) & 0xFF;
-                        if (ihex_dump_record(fp, 0, 0x04, adr_data, 2) != 0) {
-                                self->error = IHEX_ERROR_DUMP;
-                                return -1;
-                        }
-                }
+		if ((new_address & 0xFFFF0000) != (*old_address & 0xFFFF0000)) {
+			adr_data[0] = new_address >> 24;
+			adr_data[1] = (new_address >> 16) & 0xFF;
+			if (ihex_dump_record(fp, 0, 0x04, adr_data, 2) != 0) {
+				self->error = IHEX_ERROR_DUMP;
+				return -1;
+			}
+		}
 
-                if (ihex_dump_record(fp, new_address & 0xFFFF, 0x00, &seg->data[total], rec_size) != 0){
-                        self->error = IHEX_ERROR_DUMP;
-                        return -1;
-                }
+		if (ihex_dump_record(fp, new_address & 0xFFFF, 0x00, &seg->data[total], rec_size) != 0) {
+			self->error = IHEX_ERROR_DUMP;
+			return -1;
+		}
 
-                *old_address = new_address;
-                total += rec_size;
-        }
+		*old_address = new_address;
+		total += rec_size;
+	}
 
-        return 0;
+	return 0;
 }
 
-int ihex_dump_file(ihex_handler_t self, FILE *fp)
+int ihex_dump_file(struct ihex_object *self, FILE *fp)
 {
-        struct ihex_data_segment *seg;
-        uint32_t old_address;
+	struct ihex_data_segment *seg;
+	uint32_t old_address;
 
 	assert(self != NULL);
 	assert(fp != NULL);
 
-        old_address = 0;
+	old_address = 0;
 	seg = self->segments;
-        while (seg != NULL) {
-                if (ihex_dump_segment(self, seg, fp, &old_address) != 0)
-                        return -1;
-                seg = seg->next;
-        }
+	while (seg != NULL) {
+		if (ihex_dump_segment(self, seg, fp, &old_address) != 0)
+			return -1;
+		seg = seg->next;
+	}
 
-        if (ihex_dump_record(fp, 0, 0x01, NULL, 0) != 0) {
-                self->error = IHEX_ERROR_DUMP;
-                return -1;
-        }
+	if (ihex_dump_record(fp, 0, 0x01, NULL, 0) != 0) {
+		self->error = IHEX_ERROR_DUMP;
+		return -1;
+	}
 
-        return 0;
+	return 0;
 }

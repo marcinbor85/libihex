@@ -1,5 +1,5 @@
 # libihex
-Plain C library for parsing and dumping IntelHex files.
+Plain C library for manipulating IntelHex files.
 
 ## Features
 * robust intelhex parsing
@@ -7,6 +7,7 @@ Plain C library for parsing and dumping IntelHex files.
 * dynamic memory allocation
 * automatic records aligning
 * automatic segments sorting and joining
+* data overlapping detection
 * CRLF and LF compatible
 * small footprint, very fast and resources friendly
 * padding byte for unspecified addresses
@@ -27,17 +28,16 @@ sudo make install
 
 ## API
 ```c
-ihex_handler_t ihex_new(void);
-void ihex_delete(ihex_handler_t self);
-
-const char *ihex_get_error_string(ihex_handler_t self);
-
-int ihex_parse_file(ihex_handler_t self, FILE *fp);
-int ihex_dump_file(ihex_handler_t self, FILE *fp);
-
-int ihex_set_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size);
-int ihex_get_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size);
+struct ihex_object *ihex_new(void);
+void ihex_delete(struct ihex_object *self);
+const char *ihex_get_error_string(struct ihex_object *self);
+int ihex_parse_file(struct ihex_object *self, FILE *fp);
+int ihex_dump_file(struct ihex_object *self, FILE *fp);
+int ihex_set_data(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size);
+int ihex_get_data(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size);
 ```
+
+See ```ihex.h``` header file for details.
 
 ## Examples
 
@@ -56,7 +56,7 @@ static char input_hex[] =
 
 int main(int argc, char **argv)
 {
-        ihex_handler_t ihex;
+        struct ihex_object *ihex;
         FILE *fp;
         unsigned char data[8];
         int i;

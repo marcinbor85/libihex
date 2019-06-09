@@ -28,7 +28,10 @@ SOFTWARE.
 #include <stdint.h>
 #include <stdio.h>
 
-typedef enum {
+/**
+ * Enum type with defined errors.
+ */
+enum ihex_error {
 	IHEX_NO_ERROR = 0,
 	IHEX_ERROR_DATA_OVERLAPPING,
 	IHEX_ERROR_NO_EOF_LINE,
@@ -41,36 +44,96 @@ typedef enum {
 	IHEX_ERROR_RECORD_TYPE,
 	IHEX_ERROR_MALLOC,
 	IHEX_ERROR_DUMP
-} ihex_error;
-
-struct ihex_data_segment {
-	uint32_t adr_start;
-	uint32_t data_size;
-	uint8_t *data;
-	struct ihex_data_segment *prev;
-	struct ihex_data_segment *next;
-} ihex_data_segment;
-
-struct ihex_object {
-	struct ihex_data_segment *segments;
-	uint8_t pad_byte;
-	uint8_t align_record;
-	uint32_t extended_address;
-	int finished_flag;
-	ihex_error error;
 };
 
-typedef struct ihex_object* ihex_handler_t;
+typedef enum ihex_error ihex_error_e; /* typedef with error type */
 
-ihex_handler_t ihex_new(void);
-void ihex_delete(ihex_handler_t self);
+/**
+ * Structure with data segment fields.
+ */
+struct ihex_data_segment {
+	uint32_t adr_start; /* starting address of data segment */
+	uint32_t data_size; /* continous data segment size */
+	uint8_t *data; /* pointer to data (dynamically created) */
+	struct ihex_data_segment *prev; /* pointer to previous data segment (two-dir list) */
+	struct ihex_data_segment *next; /* pointer to next data segment (two-dir list) */
+} ihex_data_segment;
 
-const char *ihex_get_error_string(ihex_handler_t self);
+/**
+ * Structure with object internal data fields.
+ */
+struct ihex_object {
+	struct ihex_data_segment *segments; /* pointer to data segments list */
+	uint8_t pad_byte; /* pad byte value, used to fill unassigned addresses */
+	uint8_t align_record; /* align width in bytes, used in data dumping to ihex file */
+	uint32_t extended_address; /* temporary field with extended address used in data parsing */
+	int finished_flag; /* flag used to indicate EOF line in ihex file */
+	ihex_error_e error; /* field with error code during operating */
+};
 
-int ihex_parse_file(ihex_handler_t self, FILE *fp);
-int ihex_dump_file(ihex_handler_t self, FILE *fp);
+/**
+ * Create and return pointer to created object instance.
+ * 
+ * @return pointer to object instance
+ */
+struct ihex_object *ihex_new(void);
 
-int ihex_set_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size);
-int ihex_get_data(ihex_handler_t self, uint32_t adr, uint8_t *data, uint32_t size);
+/**
+ * Delete object instance and all internal references to data memory segments.
+ * 
+ * @param self pointer to object instance
+ */
+void ihex_delete(struct ihex_object *self);
+
+/**
+ * Method to get error description if any.
+ * 
+ * @param self pointer to object instance
+ * @return pointer to string with error description. NULL if there are no any error.
+ */
+const char *ihex_get_error_string(struct ihex_object *self);
+
+/**
+ * Main method to parse intelhex file.
+ * All data are stored internally in dynamically created data segments.
+ * 
+ * @param self pointer to object instance
+ * @param fp pointer to file stream handler (read mode)
+ * @return 0 if no error, else if error
+ */
+int ihex_parse_file(struct ihex_object *self, FILE *fp);
+
+/**
+ * Main method to dump intelhex file.
+ * 
+ * @param self pointer to object instance
+ * @param fp pointer to file stream handler (write mode)
+ * @return 0 if no error, else if error
+ */
+int ihex_dump_file(struct ihex_object *self, FILE *fp);
+
+/**
+ * Method used to add binary data to segments.
+ * Auto check for data overlaping.
+ * 
+ * @param self pointer to object instance
+ * @param adr start address where data should be placed
+ * @param data pointer to data
+ * @param size size of data to add
+ * @return 0 if no error, else if error
+ */
+int ihex_set_data(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size);
+
+/**
+ * Method used to get binary data from segments.
+ * Auto fill unused addresses.
+ * 
+ * @param self pointer to object instance
+ * @param adr start address where from data should be read
+ * @param data pointer to place where data should be write
+ * @param size size of data to read
+ * @return 0 if no error, else if error
+ */
+int ihex_get_data(struct ihex_object *self, uint32_t adr, uint8_t *data, uint32_t size);
 
 #endif /* __IHEX_H */
